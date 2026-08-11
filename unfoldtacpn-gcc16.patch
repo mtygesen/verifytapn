@@ -1,0 +1,11 @@
+diff --git a/include/PQL/PQL.h b/include/PQL/PQL.h
+--- a/include/PQL/PQL.h
++++ b/include/PQL/PQL.h
+@@ -23,6 +23,7 @@
+ #include <string>
+ #include <vector>
+ #include <memory>
++#include <cstdint>
+ 
+ namespace unfoldtacpn {
+     namespace PQL {

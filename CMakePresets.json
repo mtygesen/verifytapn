@@ -1,0 +1,165 @@
+{
+	"version": 6,
+	"cmakeMinimumRequired": {
+		"major": 3,
+		"minor": 31,
+		"patch": 0
+	},
+	"configurePresets": [
+		{
+			"name": "use-gcc",
+			"hidden": true,
+			"environment": {
+				"GCC_VERSION": "16"
+			}
+		},
+		{
+			"name": "release",
+			"displayName": "Release",
+			"description": "Configure Release build",
+			"inherits": "use-gcc",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build-${presetName}",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"VERIFYTAPN_GetDependencies": "ON",
+				"VERIFYTAPN_Static": "ON"
+			}
+		},
+		{
+			"name": "debug",
+			"displayName": "Debug",
+			"description": "Configure Debug build",
+			"inherits": "use-gcc",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build-${presetName}",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Debug",
+				"VERIFYTAPN_GetDependencies": "ON",
+				"VERIFYTAPN_Static": "OFF"
+			}
+		},
+		{
+			"name": "win64-release",
+			"displayName": "Windows Release",
+			"description": "Configure Windows Cross-Compile Release build",
+			"generator": "Ninja",
+			"binaryDir": "${sourceDir}/build-${presetName}",
+			"toolchainFile": "${sourceDir}/toolchain-x86_64-w64-mingw32.cmake",
+			"cacheVariables": {
+				"CMAKE_BUILD_TYPE": "Release",
+				"VERIFYTAPN_GetDependencies": "ON",
+				"VERIFYTAPN_Static": "ON"
+			}
+		}
+	],
+	"buildPresets": [
+		{
+			"name": "release-deps",
+			"configurePreset": "release",
+			"targets": [
+				"boost-ext",
+				"rapidxml-ext",
+				"unfoldtacpn-ext",
+				"xxhash-ext",
+				"uutils-ext",
+				"udbm-ext",
+				"sparsehash-ext"
+			]
+		},
+		{
+			"name": "release",
+			"configurePreset": "release"
+		},
+		{
+			"name": "debug-deps",
+			"configurePreset": "debug",
+			"targets": [
+				"boost-ext",
+				"rapidxml-ext",
+				"unfoldtacpn-ext",
+				"xxhash-ext",
+				"uutils-ext",
+				"udbm-ext",
+				"sparsehash-ext"
+			]
+		},
+		{
+			"name": "debug",
+			"configurePreset": "debug"
+		},
+		{
+			"name": "win64-release-deps",
+			"configurePreset": "win64-release",
+			"targets": [
+				"boost-ext",
+				"rapidxml-ext",
+				"unfoldtacpn-ext",
+				"xxhash-ext",
+				"uutils-ext",
+				"udbm-ext",
+				"sparsehash-ext"
+			]
+		},
+		{
+			"name": "win64-release",
+			"configurePreset": "win64-release"
+		}
+	],
+	"workflowPresets": [
+		{
+			"name": "release",
+			"displayName": "Release Workflow",
+			"steps": [
+				{
+					"type": "configure",
+					"name": "release"
+				},
+				{
+					"type": "build",
+					"name": "release-deps"
+				},
+				{
+					"type": "build",
+					"name": "release"
+				}
+			]
+		},
+		{
+			"name": "debug",
+			"displayName": "Debug Workflow",
+			"steps": [
+				{
+					"type": "configure",
+					"name": "debug"
+				},
+				{
+					"type": "build",
+					"name": "debug-deps"
+				},
+				{
+					"type": "build",
+					"name": "debug"
+				}
+			]
+		},
+		{
+			"name": "win64-release",
+			"displayName": "Windows Release Workflow",
+			"steps": [
+				{
+					"type": "configure",
+					"name": "win64-release"
+				},
+				{
+					"type": "build",
+					"name": "win64-release-deps"
+				},
+				{
+					"type": "build",
+					"name": "win64-release"
+				}
+			]
+		}
+	]
+}

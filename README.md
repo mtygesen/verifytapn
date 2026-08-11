@@ -4,57 +4,49 @@ VerifyTAPN is a stand-alone verification engine for timed-arc Petri nets, develo
 
 ## Linux
 
-To compile verifytapn
-
+Install dependencies:
+```bash
+sudo apt update
+sudo apt install cmake ninja-build make flex bison gcc-16 g++-16
 ```
 
-sudo apt install flex bison cmake build-essential
-
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Prebuild
-make
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make
+Build a release:
+```bash
+export PATH="$(brew --prefix bison)/bin:$(brew --prefix flex)/bin:$PATH"
+cmake --workflow release
 ```
 
-## Mac OS X
+## Mac OS
 
-Install homebrew
+Install Xcode through the App Store.
 
-```
-brew install cmake flex bison
-
-export CC=gcc-11; export CXX=g++-11
-
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Prebuild -DFLEX_EXECUTABLE=/usr/local/opt/flex/bin/flex -DBISON_EXECUTABLE=/usr/local/opt/bison/bin/bison
-make
-cmake .. -DCMAKE_BUILD_TYPE=Release -DFLEX_EXECUTABLE=/usr/local/opt/flex/bin/flex -DBISON_EXECUTABLE=/usr/local/opt/bison/bin/bison
-make
+Install dependencies:
+```bash
+brew install cmake ninja flex bison gcc@16
 ```
 
-Alternative bison and flex locations:
-
-```
-cmake -DBISON_EXECUTABLE=/opt/homebrew/opt/bison/bin/bison -DFLEX_EXECUTABLE=/opt/homebrew/opt/flex/bin/flex ..
-```
-
-## Windows (Cross-compile)
-
-To setup cross-compile:
-
-```
-sudo apt install flex bison cmake build-essential mingw-w64-x86-64-dev mingw-w64-tools g++-mingw-w64-x86-64
+Build a release:
+```bash
+cmake --workflow release
 ```
 
+## Windows (Cross Compile)
 
-To compile verifytapn:
-
+Install dependencies:
+```bash
+sudo apt update
+sudo apt install cmake ninja-build make flex bison mingw-w64
 ```
-mkdir build-win && cd build-win
-cmake .. -DCMAKE_BUILD_TYPE=Prebuild -DCMAKE_TOOLCHAIN_FILE=../toolchain-x86_64-w64-mingw32.cmake
-make
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../toolchain-x86_64-w64-mingw32.cmake
-make
 
+Build a Windows release:
+```bash
+cmake --workflow win64-release
 ```
+
+## CMake Workflows
+
+| Workflow | Purpose | Build directory |
+| --- | --- | --- |
+| `release` | Release build | `build-release` |
+| `debug` | Debug build | `build-debug` |
+| `win64-release` | Windows cross-compiled release | `build-win64-release` |

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.31)
 
 ## Default to release builds, must be set before project
 if (NOT CMAKE_BUILD_TYPE OR CMAKE_BUILD_TYPE STREQUAL "")
@@ -9,7 +9,37 @@ endif()
 # Project Definition
 set(VERIFYTAPN_NAME "verifytapn")
 set(VERIFYTAPN_VERSION 1.3.3)
+
+# Select GCC compiler
+set(DESIRED_GCC_VERSION "$ENV{GCC_VERSION}")
+if (NOT CMAKE_C_COMPILER AND NOT DEFINED ENV{CC})
+    find_program(GCC_REQ_C "gcc-${DESIRED_GCC_VERSION}")
+    if (GCC_REQ_C)
+        set(CMAKE_C_COMPILER "${GCC_REQ_C}" CACHE STRING "C compiler")
+    else()
+        set(CMAKE_C_COMPILER "gcc" CACHE STRING "C compiler")
+    endif()
+endif()
+
+if (NOT CMAKE_CXX_COMPILER AND NOT DEFINED ENV{CXX})
+    find_program(GCC_REQ_CXX "g++-${DESIRED_GCC_VERSION}")
+    if (GCC_REQ_CXX)
+        set(CMAKE_CXX_COMPILER "${GCC_REQ_CXX}" CACHE STRING "CXX compiler")
+    else()
+        set(CMAKE_CXX_COMPILER "g++" CACHE STRING "CXX compiler")
+    endif()
+endif()
+
 project(${VERIFYTAPN_NAME} VERSION ${VERIFYTAPN_VERSION} LANGUAGES CXX C)
+
+if (DESIRED_GCC_VERSION)
+    if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        message(FATAL_ERROR "GCC version ${DESIRED_GCC_VERSION} or newer is required (from GCC_VERSION in CMakePresets.json), but found ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}")
+    endif()
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS DESIRED_GCC_VERSION)
+        message(FATAL_ERROR "GCC version ${DESIRED_GCC_VERSION} or newer is required (from GCC_VERSION in CMakePresets.json), but found GCC ${CMAKE_CXX_COMPILER_VERSION}")
+    endif()
+endif()
 
 
 # C++ Definition
@@ -63,7 +93,15 @@ find_package(BISON 3.5.0 REQUIRED)
 
 if (VERIFYTAPN_GetDependencies)
     include(ExternalProject)
+    include(ProcessorCount)
+    ProcessorCount(DEPENDENCY_JOBS)
+    if (NOT DEPENDENCY_JOBS)
+        set(DEPENDENCY_JOBS 1)
+    endif()
     # Install location should be ${EXTERNAL_INSTALL_LOCATION}
+
+    set(BOOST_PROGRAM_OPTIONS_LIBRARY
+        ${EXTERNAL_INSTALL_LOCATION}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}boost_program_options${CMAKE_STATIC_LIBRARY_SUFFIX})
 
     if (UNIX AND NOT APPLE)
         set(BOOST_CONFIG_JAM "using gcc : : ${CMAKE_CXX_COMPILER}")
@@ -87,7 +125,8 @@ if (VERIFYTAPN_GetDependencies)
         URL_HASH SHA256=f22143b5528e081123c3c5ed437e92f648fe69748e95fa6e2bd41484e2986cc3
         PATCH_COMMAND echo "${BOOST_CONFIG_JAM}" $<SEMICOLON>  > config.jam
         CONFIGURE_COMMAND ./bootstrap.sh --prefix=${CMAKE_BINARY_DIR}/external cxxflags="-arch x86_64" --without-icu
-        BUILD_COMMAND ./b2 --user-config=config.jam --prefix=${CMAKE_BINARY_DIR}/external --with-program_options cxxstd=17 cflags="-fPIC" cxxflags="-fPIC" address-model=64 ${BOOST_B2_OPTS} variant=release link=static runtime-link=static install
+        BUILD_COMMAND ./b2 -j${DEPENDENCY_JOBS} --user-config=config.jam --prefix=${CMAKE_BINARY_DIR}/external --with-program_options --layout=system cxxstd=17 cflags="-fPIC" cxxflags="-fPIC" address-model=64 ${BOOST_B2_OPTS} variant=release link=static runtime-link=static install
+        BUILD_BYPRODUCTS ${BOOST_PROGRAM_OPTIONS_LIBRARY}
         BUILD_IN_SOURCE 1
         INSTALL_COMMAND ""
     )
@@ -107,6 +146,8 @@ if (VERIFYTAPN_GetDependencies)
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         GIT_REPOSITORY https://github.com/TAPAAL/unfoldTACPN
         GIT_TAG 5948ffff5a084eccef7c2758b8df371b170fa68d
+        UPDATE_DISCONNECTED TRUE
+        PATCH_COMMAND sh -c "git apply --reverse --check '${PROJECT_SOURCE_DIR}/unfoldtacpn-gcc16.patch' 2>/dev/null || git apply '${PROJECT_SOURCE_DIR}/unfoldtacpn-gcc16.patch'"
         CMAKE_ARGS -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE} -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER} -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}  -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION} -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DFLEX_EXECUTABLE=${FLEX_EXECUTABLE} -DBISON_EXECUTABLE=${BISON_EXECUTABLE}
     )
 
@@ -121,6 +162,7 @@ if (VERIFYTAPN_GetDependencies)
                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                    -DCMAKE_OSX_DEPLOYMENT_TARGET=${VERIFYTAPN_OSX_DEPLOYMENT_TARGET}
+                   -DCMAKE_POLICY_VERSION_MINIMUM=3.5
         INSTALL_COMMAND ${CMAKE_COMMAND} --build . --target install
     )
 
@@ -129,11 +171,13 @@ if (VERIFYTAPN_GetDependencies)
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         URL https://github.com/UPPAALModelChecker/UUtils/archive/refs/tags/v1.1.1.zip
         URL_HASH SHA256=5e0ccc6996f2eed47dc3ec7fb71cb6b79e0526db9b30622b552ba35a11f96424
-        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION}              
+        CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION}
+                   -DCMAKE_PREFIX_PATH=${EXTERNAL_INSTALL_LOCATION}
                    -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
                    -DCMAKE_OSX_DEPLOYMENT_TARGET=${VERIFYTAPN_OSX_DEPLOYMENT_TARGET}
+        DEPENDS xxhash-ext
         INSTALL_COMMAND ${CMAKE_COMMAND} --build . --target install
     )
 
@@ -144,6 +188,7 @@ if (VERIFYTAPN_GetDependencies)
         URL https://github.com/UPPAALModelChecker/UDBM/archive/refs/tags/v2.0.12.zip
         URL_HASH SHA512=a1217448fdbf0a358d2956b16b308de5baffff3bc2d988589758e52dc3bda81bd4eb50988a9ed19f1010be95b1ba2c6cfeccb535b7f7ed8aae022bfbeee868be
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${EXTERNAL_INSTALL_LOCATION}
+                   -DCMAKE_PREFIX_PATH=${EXTERNAL_INSTALL_LOCATION}
                    -DCMAKE_TOOLCHAIN_FILE=${CMAKE_TOOLCHAIN_FILE}
                    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
                    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
@@ -161,7 +206,7 @@ if (VERIFYTAPN_GetDependencies)
         DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         URL https://github.com/sparsehash/sparsehash/archive/sparsehash-2.0.4.zip
         CONFIGURE_COMMAND CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} ./configure --prefix=${CMAKE_BINARY_DIR}/external CXXFLAGS=-std=c++11 ${SPARSEHASH_HOST}
-        BUILD_COMMAND CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} make
+        BUILD_COMMAND CC=${CMAKE_C_COMPILER} CXX=${CMAKE_CXX_COMPILER} make -j${DEPENDENCY_JOBS}
         INSTALL_COMMAND make install
         BUILD_IN_SOURCE 1
     )
@@ -174,30 +219,19 @@ endif (VERIFYTAPN_GetDependencies)
 if (CMAKE_BUILD_TYPE MATCHES Prebuild)
     # dummy for pre-build
     add_custom_target( prebuild )
-    add_dependencies( prebuild boost-ext rapidxml-ext unfoldtacpn-ext sparsehash-ext)
+    add_dependencies(prebuild boost-ext rapidxml-ext unfoldtacpn-ext xxhash-ext uutils-ext udbm-ext sparsehash-ext)
 else ( )
-
-    set(Boost_USE_RELEASE_LIBS ON)
-    set(Boost_USE_MULTITHREADED OFF)
-    if (NOT BUILD_TESTING)
-        set(Boost_USE_STATIC_LIBS ON)
+    if (VERIFYTAPN_GetDependencies)
+        add_library(Boost::program_options STATIC IMPORTED)
+        set_target_properties(Boost::program_options PROPERTIES
+            IMPORTED_LOCATION ${BOOST_PROGRAM_OPTIONS_LIBRARY})
     else ()
-        set(Boost_USE_STATIC_LIBS OFF)
-    endif()
-
-    if(NOT BUILD_TESTING)
-        set(Boost_USE_STATIC_RUNTIME ON)
-        set(Boost_USE_STATIC_LIBS ON)
         set(Boost_USE_RELEASE_LIBS ON)
         set(Boost_USE_MULTITHREADED OFF)
-    else()
-        set(Boost_USE_STATIC_LIBS OFF)
-        set(Boost_USE_RELEASE_LIBS ON)
-        set(Boost_USE_MULTITHREADED OFF)
+        set(Boost_USE_STATIC_LIBS ${VERIFYTAPN_Static})
+        find_package(Boost 1.66 REQUIRED COMPONENTS program_options)
+        include_directories(${Boost_INCLUDE_DIRS})
     endif()
-
-    find_package(Boost 1.66 REQUIRED program_options)
-    include_directories(${Boost_INCLUDE_DIRS})
 
     # Set Macros
     add_compile_definitions(VERIFYTAPN_VERSION=\"${VERIFYTAPN_VERSION}\")

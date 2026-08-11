@@ -5,38 +5,30 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:  
+  workflow_dispatch:
 
-concurrency: 
+concurrency:
   group: build-Linux-${{ github.head_ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-26.04
 
     steps:
-    - uses: actions/checkout@v2
-    
+    - uses: actions/checkout@v7.0.1
+
     - name: ubuntu install depends
       run: |
-        sudo apt-get update
-        sudo apt-get install -f flex bison
-    
-    - name: Prebuild
-      run: |
-        mkdir build && cd build
-        CC=gcc-11 CXX=g++-11 cmake ../ -DCMAKE_BUILD_TYPE=Prebuild
-        make
+        GCC_VERSION=$(jq -er '.configurePresets[] | select(.name == "use-gcc") | .environment.GCC_VERSION | select(test("^[0-9]+$"))' CMakePresets.json)
+        sudo apt update
+        sudo apt install -f flex bison make ninja-build "gcc-${GCC_VERSION}" "g++-${GCC_VERSION}"
 
-    - name: Build 
-      run: |
-        cd build
-        CC=gcc-11 CXX=g++-11 cmake ../ -DCMAKE_BUILD_TYPE=Release
-        make
+    - name: Build Release
+      run: cmake --workflow release
 
-    - name: Upload artifacts 
-      uses: actions/upload-artifact@v4
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v7.0.1
       with:
         name: verifytapn-linux64
-        path: '${{runner.workspace}}/verifytapn/build/verifytapn/bin/verifytapn-linux64'
+        path: '${{github.workspace}}/build-release/verifytapn/bin/verifytapn-linux64'
