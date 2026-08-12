@@ -2,6 +2,7 @@
 
 #include <string>
 #include <algorithm>
+#include <vector>
 
 namespace VerifyTAPN {
 
@@ -20,7 +21,10 @@ namespace VerifyTAPN {
     }
 
     void TAPNModelBuilder::addTransition(const std::string &name, int player, bool urgent,
-                                        double x, double y)
+                                        double x, double y,
+                                        int distrib, std::vector<double> distribParam,
+                                        bool customDistributionRandomStart, double weight,
+                                        int firingMode)
     {
         if(player != 0)
         {

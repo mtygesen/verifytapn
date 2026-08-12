@@ -166,9 +166,14 @@ namespace VerifyTAPN {
             _a_result = new IdentifierExpression(id);
         }
 
-        void TranslationVisitor::_accept(const unfoldtacpn::PQL::LiteralExpr *element) {
+        void TranslationVisitor::_accept(const unfoldtacpn::PQL::LiteralIntExpr *element) {
             check_first();
             _a_result = new NumberExpression(element->value());
+        }
+
+        void TranslationVisitor::_accept(const unfoldtacpn::PQL::LiteralRealExpr *element) {
+            check_first();
+            _a_result = new NumberExpression(static_cast<int>(element->value()));
         }
 
         void TranslationVisitor::_accept(const unfoldtacpn::PQL::PlusExpr *element) {
