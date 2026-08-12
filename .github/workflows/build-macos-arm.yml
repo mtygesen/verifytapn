@@ -1,4 +1,5 @@
-name: Build MacOS for ARM processor
+name: Build MacOS ARM processor
+
 on:
   push:
     branches: [ main ]
@@ -8,41 +9,29 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: build-MacOS-ARM${{ github.head_ref }}
+  group: build-MacOS-ARM-${{ github.head_ref }}
   cancel-in-progress: true
 
 jobs:
   build:
-    if: github.event.pull_request.draft == false
     runs-on: macos-14
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v7.0.1
 
     - name: Install depends
       run: |
-        brew install flex bison
-        curl -L https://github.com/Kitware/CMake/releases/download/v3.31.8/cmake-3.31.8-macos-universal.tar.gz -o cmake.tar.gz
-        tar -xzf cmake.tar.gz
-        sudo mv cmake-3.31.8-macos-universal/CMake.app /Applications/
-        export PATH="/Applications/CMake.app/Contents/bin:$PATH"
-        cmake --version
-        echo "/Applications/CMake.app/Contents/bin" >> $GITHUB_PATH
+        GCC_VERSION=$(sed -nE 's/^set\(DEFAULT_GCC_VERSION ([0-9]+)\)$/\1/p' CMakeLists.txt)
+        [[ $GCC_VERSION =~ ^[0-9]+$ ]]
+        brew install cmake flex bison ninja "gcc@${GCC_VERSION}"
 
-    - name: Prebuild
+    - name: Build Release
       run: |
-        mkdir build && cd build
-        CC=gcc-14 CXX=g++-14 cmake ../ -DCMAKE_BUILD_TYPE=Prebuild -DBISON_EXECUTABLE=/opt/homebrew/opt/bison/bin/bison -DFLEX_EXECUTABLE=/opt/homebrew/opt/flex/bin/flex
-        make
-
-    - name: Build
-      run: |
-        cd build
-        CC=gcc-14 CXX=g++-14 cmake ../ -DCMAKE_BUILD_TYPE=Release -DBISON_EXECUTABLE=/opt/homebrew/opt/bison/bin/bison  -DFLEX_EXECUTABLE=/opt/homebrew/opt/flex/bin/flex
-        make
+        export PATH="$(brew --prefix bison)/bin:$(brew --prefix flex)/bin:$PATH"
+        cmake --workflow release
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7.0.1
       with:
         name: verifytapn-arm64
-        path: '${{runner.workspace}}/verifytapn/build/verifytapn/bin/verifytapn-osx64'
+        path: '${{github.workspace}}/build-release/verifytapn/bin/verifytapn-osx64'

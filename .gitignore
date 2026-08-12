@@ -3,5 +3,5 @@ Release
 .cproject
 .project
 .settings
-build/
+build*/
 .vscode
