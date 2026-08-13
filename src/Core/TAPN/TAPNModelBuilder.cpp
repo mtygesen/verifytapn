@@ -36,6 +36,18 @@ namespace VerifyTAPN {
             std::cerr << "ERROR: Urgent transitions not supported" << std::endl;
             std::exit(1);
         }
+        if (distrib != 0 || !distribParam.empty()) {
+            std::cerr << "ERROR: Stochastic distributions not supported" << std::endl;
+            std::exit(1);
+        }
+        if (customDistributionRandomStart) {
+            std::cerr << "ERROR: Custom distribution random start not supported" << std::endl;
+            std::exit(1);
+        }
+        if (weight != 1.0) {
+            std::cerr << "ERROR: Transition weights not supported" << std::endl;
+            std::exit(1);
+        }
         if (firingMode != 0) {
             std::cerr << "ERROR: Firing modes not supported" << std::endl;
             std::exit(1);
