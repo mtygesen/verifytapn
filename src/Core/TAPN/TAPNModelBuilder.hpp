@@ -3,6 +3,7 @@
 
 #include "TAPN.hpp"
 #include <TAPNBuilderInterface.h>
+#include <vector>
 
 
 namespace VerifyTAPN {
@@ -24,7 +25,10 @@ namespace VerifyTAPN {
                 double y = 0) override;
 
         virtual void addTransition(const std::string &name, int player, bool urgent,
-                                            double, double) override;
+                                            double x, double y,
+                                            int distrib = 0, std::vector<double> distribParam = std::vector<double>(),
+                                            bool customDistributionRandomStart = false, double weight = 1.0,
+                                            int firingMode = 0) override;
 
         virtual void addInputArc(const std::string &place,
                 const std::string &transition,
