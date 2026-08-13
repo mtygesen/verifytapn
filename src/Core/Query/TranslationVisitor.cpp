@@ -171,6 +171,7 @@ namespace VerifyTAPN {
             _a_result = new NumberExpression(element->value());
         }
 
+        // Reals not supported so just cast to int
         void TranslationVisitor::_accept(const unfoldtacpn::PQL::LiteralRealExpr *element) {
             check_first();
             _a_result = new NumberExpression(static_cast<int>(element->value()));
