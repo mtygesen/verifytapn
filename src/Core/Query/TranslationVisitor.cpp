@@ -171,10 +171,10 @@ namespace VerifyTAPN {
             _a_result = new NumberExpression(element->value());
         }
 
-        // Reals not supported so just cast to int
+        // Reals not supported
         void TranslationVisitor::_accept(const unfoldtacpn::PQL::LiteralRealExpr *element) {
-            check_first();
-            _a_result = new NumberExpression(static_cast<int>(element->value()));
+            std::cerr << "ERROR: Real constants not supported\n";
+            std::exit(1);
         }
 
         void TranslationVisitor::_accept(const unfoldtacpn::PQL::PlusExpr *element) {

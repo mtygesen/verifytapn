@@ -36,6 +36,10 @@ namespace VerifyTAPN {
             std::cerr << "ERROR: Urgent transitions not supported" << std::endl;
             std::exit(1);
         }
+        if (firingMode != 0) {
+            std::cerr << "ERROR: Firing modes not supported" << std::endl;
+            std::exit(1);
+        }
         auto id = _transitions.size();
         _transitions.emplace_back(new TimedTransition(id, name, name, x, y));
     }
