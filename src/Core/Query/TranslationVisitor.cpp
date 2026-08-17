@@ -166,9 +166,15 @@ namespace VerifyTAPN {
             _a_result = new IdentifierExpression(id);
         }
 
-        void TranslationVisitor::_accept(const unfoldtacpn::PQL::LiteralExpr *element) {
+        void TranslationVisitor::_accept(const unfoldtacpn::PQL::LiteralIntExpr *element) {
             check_first();
             _a_result = new NumberExpression(element->value());
+        }
+
+        // Reals not supported
+        void TranslationVisitor::_accept(const unfoldtacpn::PQL::LiteralRealExpr *element) {
+            std::cerr << "ERROR: Real constants not supported\n";
+            std::exit(1);
         }
 
         void TranslationVisitor::_accept(const unfoldtacpn::PQL::PlusExpr *element) {

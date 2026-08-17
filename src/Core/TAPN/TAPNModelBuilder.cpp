@@ -34,7 +34,10 @@ namespace VerifyTAPN {
     }
 
     void TAPNModelBuilder::addTransition(const std::string &name, int player, bool urgent,
-                                        double x, double y)
+                                        double x, double y,
+                                        int distrib, std::vector<double> distribParam,
+                                        bool customDistributionRandomStart, double weight,
+                                        int firingMode)
     {
         if(player != 0)
         {
@@ -44,6 +47,22 @@ namespace VerifyTAPN {
         if(urgent)
         {
             std::cerr << "ERROR: Urgent transitions not supported" << std::endl;
+            std::exit(1);
+        }
+        if (distrib != 0 || !distribParam.empty()) {
+            std::cerr << "ERROR: Stochastic distributions not supported" << std::endl;
+            std::exit(1);
+        }
+        if (customDistributionRandomStart) {
+            std::cerr << "ERROR: Custom distribution random start not supported" << std::endl;
+            std::exit(1);
+        }
+        if (weight != 1.0) {
+            std::cerr << "ERROR: Transition weights not supported" << std::endl;
+            std::exit(1);
+        }
+        if (firingMode != 0) {
+            std::cerr << "ERROR: Firing modes not supported" << std::endl;
             std::exit(1);
         }
         auto id = _transitions.size();
