@@ -23,8 +23,9 @@ namespace VerifyTAPN
 			SymbolicMarking* initialMarking,
 			const AST::Query* query,
 			const VerificationOptions& options,
-			MarkingFactory* factory
-		) : DefaultSearchStrategy(tapn, initialMarking, query, options, factory) { };
+			MarkingFactory* factory,
+			const std::vector<int>& initialAges
+		) : DefaultSearchStrategy(tapn, initialMarking, query, options, factory, initialAges) { };
 
 	protected:
 		virtual WaitingList* CreateWaitingList() const { return new PriorityQueueWaitingList<Random>; };

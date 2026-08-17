@@ -159,33 +159,32 @@ namespace VerifyTAPN
 	// Theory: AfterAction(Trace, index, guard/invariant)
 	constraint_t EntrySolver::AfterAction(unsigned int locationIndex, const constraint_t & constraint) const
 	{
-		if(constraint.j == 0 && constraint.i != 0)
-			return constraint_t{locationIndex, LastResetAt(locationIndex, constraint.i), constraint.value};
-
-		else
-			if(constraint.i == 0 && constraint.j != 0)
-				return constraint_t{LastResetAt(locationIndex, constraint.j), locationIndex, constraint.value};
-
-			else
-				return constraint_t{LastResetAt(locationIndex, constraint.j), LastResetAt(locationIndex, constraint.i), constraint.value};
-
-
+		return AtEntryTime(locationIndex, locationIndex, constraint);
 	}
 	// Theory: AfterDelay(Trace, index, guard/invariant)
 	constraint_t EntrySolver::AfterDelay(unsigned int locationIndex, const constraint_t & constraint) const
 	{
-		if(constraint.i != 0 && constraint.j == 0)
-			return constraint_t{locationIndex + 1, LastResetAt(locationIndex, constraint.i), constraint.value};
-
-		else
-			if(constraint.i == 0 && constraint.j != 0)
-				return constraint_t{LastResetAt(locationIndex, constraint.j), locationIndex + 1, constraint.value};
-
-			else
-				return constraint_t{LastResetAt(locationIndex, constraint.j), LastResetAt(locationIndex, constraint.i), constraint.value};
-
-
+		return AtEntryTime(locationIndex + 1, locationIndex, constraint);
 	}
+
+	constraint_t EntrySolver::AtEntryTime(unsigned int entryTimeIndex, unsigned int locationIndex, const constraint_t& constraint) const {
+		if ((constraint.i == 0) == (constraint.j == 0)) {
+			return constraint_t{LastResetAt(locationIndex, constraint.j), LastResetAt(locationIndex, constraint.i), constraint.value};
+        }
+
+		const bool upperBound = constraint.j == 0;
+		const unsigned int clock = upperBound ? constraint.i : constraint.j;
+		const unsigned int resetAt = LastResetAt(locationIndex, clock);
+		raw_t value = constraint.value;
+		if (resetAt == 0 && clock != 0 && clock <= initialAges.size() && value != dbm_LS_INFINITY) {
+			const int age = initialAges[clock - 1];
+			value = dbm_boundbool2raw(dbm_raw2bound(value) + (upperBound ? -age : age), dbm_rawIsStrict(value));
+		}
+
+		return upperBound ? constraint_t{entryTimeIndex, resetAt, value}
+		                  : constraint_t{resetAt, entryTimeIndex, value};
+	}
+
 	// This is straight port from CTU implementation. See CTU -- SolutionFinder.cpp for details
 	std::vector<decimal> EntrySolver::FindSolution() const
 	{

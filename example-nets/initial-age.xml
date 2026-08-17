@@ -1,0 +1,15 @@
+<pnml>
+<net id="InitialAge" type="P/T net">
+<place id="P0" name="P0" invariant="&lt; inf" initialMarking="1">
+<initialMarkingAge>
+<token age="2"/>
+</initialMarkingAge>
+</place>
+<place id="P1" name="P1" invariant="&lt; inf" initialMarking="1"/>
+<place id="P2" name="P2" invariant="&lt; inf" initialMarking="0"/>
+<transition id="T0" name="T0"/>
+<inputArc inscription="[3,3]" source="P0" target="T0"/>
+<inputArc inscription="[1,1]" source="P1" target="T0"/>
+<outputArc inscription="1" source="T0" target="P2"/>
+</net>
+</pnml>

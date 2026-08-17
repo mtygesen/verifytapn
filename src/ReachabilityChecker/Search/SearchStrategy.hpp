@@ -43,7 +43,8 @@ namespace VerifyTAPN
 			SymbolicMarking* initialMarking,
 			const AST::Query* query,
 			const VerificationOptions& options,
-			MarkingFactory* factory
+			MarkingFactory* factory,
+			const std::vector<int>& initialAges
 		);
 		virtual ~DefaultSearchStrategy() { delete pwList; delete[] maxConstantsArray; };
 		virtual void Init()

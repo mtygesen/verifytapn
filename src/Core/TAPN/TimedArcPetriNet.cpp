@@ -182,7 +182,7 @@ namespace VerifyTAPN {
             }
         }
 
-        void TimedArcPetriNet::toTAPNXML(std::ostream& out, const std::vector<int>& initial) const {
+        void TimedArcPetriNet::toTAPNXML(std::ostream& out, const InitialMarking& initial) const {
             out << R"(<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <pnml xmlns="http://www.informatik.hu-berlin.de/top/pnml/ptNetb">
 <net id="ComposedModel" type="P/T net">
@@ -201,7 +201,18 @@ namespace VerifyTAPN {
                     out << "&lt;=" << inv.GetBound();
                 }
                 out << "\" ";
-                out << "initialMarking=\"" << initial[place->GetIndex()] << "\">\n";
+                const auto& tokenAges = initial[place->GetIndex()];
+                out << "initialMarking=\"" << tokenAges.size() << "\">\n";
+                bool wroteInitialAges = false;
+                for (int age : tokenAges) {
+                    if (age == 0) continue;
+                    if (!wroteInitialAges) {
+                        out << "\t<initialMarkingAge>\n";
+                        wroteInitialAges = true;
+                    }
+                    out << "\t\t<token age=\"" << age << "\"/>\n";
+                }
+                if (wroteInitialAges) out << "\t</initialMarkingAge>\n";
                 out << "\t<graphics><position x=\"" << x << "\" y=\"" << y << "\" /></graphics>\n";
                 out << "</place>\n";
             }
@@ -242,5 +253,4 @@ namespace VerifyTAPN {
 
     }
 }
-
 
