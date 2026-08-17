@@ -22,6 +22,7 @@
 #include <Colored/ColoredPetriNetBuilder.h>
 
 #include <fstream>
+#include <utility>
 
 using namespace std;
 using namespace VerifyTAPN;
@@ -40,26 +41,26 @@ std::shared_ptr<MarkingFactory> CreateFactory(const VerificationOptions& options
 	};
 }
 
-std::shared_ptr<SearchStrategy> CreateSearchStrategy(TAPN::TimedArcPetriNet* tapn, SymbolicMarking* initialMarking, AST::Query* query, const VerificationOptions& options, MarkingFactory* factory)
+std::shared_ptr<SearchStrategy> CreateSearchStrategy(TAPN::TimedArcPetriNet* tapn, SymbolicMarking* initialMarking, AST::Query* query, const VerificationOptions& options, MarkingFactory* factory, const std::vector<int>& initialAges)
 {
 	std::shared_ptr<SearchStrategy> strategy;
 
 	switch(options.GetSearchType())
 	{
 	case DEPTHFIRST:
-		strategy = std::make_shared<DFS>(*tapn, initialMarking, query, options, factory);
+		strategy = std::make_shared<DFS>(*tapn, initialMarking, query, options, factory, initialAges);
 		break;
 	case COVERMOST:
 		if(options.GetFactory() == DISCRETE_INCLUSION)
-			strategy = std::make_shared<CoverMostSearch>(*tapn, initialMarking, query, options, factory);
+			strategy = std::make_shared<CoverMostSearch>(*tapn, initialMarking, query, options, factory, initialAges);
 		else
-			strategy = std::make_shared<BFS>(*tapn, initialMarking, query, options, factory);
+			strategy = std::make_shared<BFS>(*tapn, initialMarking, query, options, factory, initialAges);
 		break;
 	case RANDOM:
-		strategy = std::make_shared<RandomSearch>(*tapn, initialMarking, query, options, factory);
+		strategy = std::make_shared<RandomSearch>(*tapn, initialMarking, query, options, factory, initialAges);
 		break;
 	default:
-		strategy = std::make_shared<BFS>(*tapn, initialMarking, query, options, factory);
+		strategy = std::make_shared<BFS>(*tapn, initialMarking, query, options, factory, initialAges);
 		break;
 	}
 	strategy->Init();
@@ -93,15 +94,15 @@ void RemoveBadPlacesFromINC(const AST::Query& normalizedQuery, const TimedArcPet
 	}
 }
 
-std::pair<std::vector<int>, std::unique_ptr<TAPN::TimedArcPetriNet>>
+std::pair<TAPN::InitialMarking, std::unique_ptr<TAPN::TimedArcPetriNet>>
 build_net(unfoldtacpn::ColoredPetriNetBuilder& builder) {
     TAPNModelBuilder modelBuilder;
     builder.unfold(modelBuilder);
-    return {modelBuilder.initialMarking(), std::unique_ptr<TAPN::TimedArcPetriNet>
-        {modelBuilder.make_tapn()}};
+    auto tapn = std::unique_ptr<TAPN::TimedArcPetriNet>{modelBuilder.make_tapn()};
+    return {modelBuilder.takeInitialMarking(), std::move(tapn)};
 }
 
-std::pair<std::vector<int>, std::unique_ptr<TAPN::TimedArcPetriNet>>
+std::pair<TAPN::InitialMarking, std::unique_ptr<TAPN::TimedArcPetriNet>>
 parse_net_file(unfoldtacpn::ColoredPetriNetBuilder& builder, const std::string& filename) {
     std::ifstream mf(filename);
     builder.parseNet(mf);
@@ -118,14 +119,14 @@ int main(int argc, char* argv[])
  	std::unique_ptr<std::stringstream> output_stream = std::make_unique<std::stringstream>();
     unfoldtacpn::ColoredPetriNetBuilder builder(options.GetPrintBindings() ? output_stream.get() : nullptr);
 
-    auto [initialVector, tapn] = parse_net_file(builder, options.GetInputFile());
+    auto [initialTokens, tapn] = parse_net_file(builder, options.GetInputFile());
 
     if(tapn != nullptr)
     {
         if(!options.getOutputModelFile().empty())
         {
             std::fstream of(options.getOutputModelFile(), std::ios::out);
-            tapn->toTAPNXML(of, initialVector);
+            tapn->toTAPNXML(of, initialTokens);
             of.close();
         }
 	} else {
@@ -197,18 +198,24 @@ int main(int argc, char* argv[])
 
 	auto factory = CreateFactory(options, tapn.get());
     std::vector<int> initialPlacement;
-    for(size_t i = 0; i < initialVector.size(); ++i) // convert into placement vector
-        for(size_t n = 0; n < initialVector[i]; ++n)
-            initialPlacement.emplace_back(i);
-	std::shared_ptr<SymbolicMarking> initialMarking(factory->InitialMarking(initialPlacement));
+    std::vector<int> initialAges;
+    for (size_t i = 0; i < initialTokens.size(); ++i) { // convert tinto placement vector
+        for (int age : initialTokens[i]) {
+            initialPlacement.push_back(i);
+            initialAges.push_back(age);
+        }
+    }
+    
+	SymbolicMarking* initialMarking = factory->InitialMarking(initialPlacement, initialAges);
 	if(initialMarking->NumberOfTokens() > options.GetKBound())
 	{
 
 		std::cout << "The specified k-bound (" << options.GetKBound() << ") is less than the number of tokens in the initial marking (" << initialMarking->NumberOfTokens() << ")." << std::endl;
+        factory->Release(initialMarking);
 		return 1;
 	}
 
-	auto strategy = CreateSearchStrategy(tapn.get(), initialMarking.get(), query.get(), options, factory.get());
+	auto strategy = CreateSearchStrategy(tapn.get(), initialMarking, query.get(), options, factory.get(), initialAges);
 
 	std::cout << options << std::endl;
 	bool result = strategy->Verify();
@@ -231,5 +238,3 @@ int main(int argc, char* argv[])
 
 	return 0;
 }
-
-

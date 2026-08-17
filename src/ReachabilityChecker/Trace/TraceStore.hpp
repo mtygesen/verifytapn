@@ -15,12 +15,13 @@ namespace VerifyTAPN
 {
 	class SymbolicMarking;
 
-	inline ConcreteMarking CreateConcreteInitialMarking(SymbolicMarking* initialMarking, unsigned int kbound, const TAPN::TimedArcPetriNet& tapn)
+	inline ConcreteMarking CreateConcreteInitialMarking(SymbolicMarking* initialMarking, unsigned int kbound, const TAPN::TimedArcPetriNet& tapn, const std::vector<int>& initialAges)
 	{
 		std::deque<Token> tokens;
 		for(unsigned int i = 0; i < initialMarking->NumberOfTokens(); i++)
 		{
-			Token token(tapn.GetPlace(initialMarking->GetTokenPlacement(i)).GetName());
+			decimal age = (i < initialAges.size()) ? decimal(initialAges[i]) : decimal(0);
+			Token token(tapn.GetPlace(initialMarking->GetTokenPlacement(i)).GetName(), age);
 			tokens.push_back(token);
 		}
 
@@ -38,8 +39,8 @@ namespace VerifyTAPN
 	private:
 		typedef google::sparse_hash_map<id_type, TraceInfo*, boost::hash<id_type> > HashMap;
 	public:
-	    TraceStore(const VerificationOptions & options, SymbolicMarking *initialMarking, const TAPN::TimedArcPetriNet & tapn)
-	    : store(), initialMarking(CreateConcreteInitialMarking(initialMarking, options.GetKBound(), tapn)), finalMarkingId(-1), lastInvariants(), options(options), identity_map(options.GetKBound(), -1)
+	    TraceStore(const VerificationOptions & options, SymbolicMarking *initialMarking, const TAPN::TimedArcPetriNet & tapn, const std::vector<int>& initialAges)
+	    : store(), initialMarking(CreateConcreteInitialMarking(initialMarking, options.GetKBound(), tapn, initialAges)), finalMarkingId(-1), lastInvariants(), options(options), identity_map(options.GetKBound(), -1), initialAges(initialAges)
 	    {
 	        for(unsigned int i = 0;i < static_cast<unsigned int>(options.GetKBound());++i){
 	            identity_map[i] = i;
@@ -84,6 +85,7 @@ namespace VerifyTAPN
 		const VerificationOptions& options;
 
 		std::vector<unsigned int> identity_map;
+		const std::vector<int> initialAges;
 	};
 }
 

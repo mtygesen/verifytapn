@@ -10,8 +10,9 @@ namespace VerifyTAPN
 		SymbolicMarking* initialMarking,
 		const AST::Query* query,
 		const VerificationOptions& options,
-		MarkingFactory* factory
-	) : tapn(tapn), initialMarking(initialMarking), checker(query), options(options), succGen(tapn, *factory, options, initialMarking->NumberOfTokens()), factory(factory), traceStore(options, initialMarking, tapn)
+		MarkingFactory* factory,
+		const std::vector<int>& initialAges
+	) : tapn(tapn), initialMarking(initialMarking), checker(query), options(options), succGen(tapn, *factory, options, initialMarking->NumberOfTokens()), factory(factory), traceStore(options, initialMarking, tapn, initialAges)
 	{
 		maxConstantsArray = new int[options.GetKBound()+1];
 		for(unsigned int i = 0; i < options.GetKBound()+1; ++i)
@@ -40,8 +41,11 @@ namespace VerifyTAPN
 				traceStore.SetFinalMarkingIdAndInvariant(initialMarking->UniqueId(), lastInvariant);
 			}
 			factory->Release(initialMarking);
+			initialMarking = nullptr;
 			return checker.IsEF(); // return true if EF query (proof found), or false if AG query (counter example found)
 		}
+		factory->Release(initialMarking);
+		initialMarking = nullptr;
 
 		while(pwList->HasWaitingStates())
 		{

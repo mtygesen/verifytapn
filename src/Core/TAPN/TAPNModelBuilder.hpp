@@ -3,6 +3,9 @@
 
 #include "TAPN.hpp"
 #include <TAPNBuilderInterface.h>
+#include <types.hpp>
+#include <utility>
+#include <vector>
 
 
 namespace VerifyTAPN {
@@ -20,6 +23,7 @@ namespace VerifyTAPN {
                 int tokens,
                 bool strict,
                 int bound,
+                unfoldtacpn::types::InitialTokenAges &&initialAges,
                 double x = 0,
                 double y = 0) override;
 
@@ -41,8 +45,8 @@ namespace VerifyTAPN {
                 const std::string& target, int weight,
                 bool lstrict, bool ustrict, int lower, int upper) override;
 
-        const std::vector<int>& initialMarking() const {
-            return _initialMarking;
+        TAPN::InitialMarking takeInitialMarking() {
+            return std::move(_initialMarking);
         }
 
         TAPN::TimedArcPetriNet* make_tapn();
@@ -57,7 +61,7 @@ namespace VerifyTAPN {
         OutputArc::Vector _outputArcs;
         TransportArc::Vector _transportArcs;
         InhibitorArc::Vector _inhibitorArcs;
-        std::vector<int> _initialMarking;
+        TAPN::InitialMarking _initialMarking;
     };
 }
 

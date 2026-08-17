@@ -158,7 +158,7 @@ namespace VerifyTAPN
 
 	void TraceStore::CalculateDelays(const std::deque<TraceInfo>& traceInfos, std::vector<decimal>& delays) const
 	{
-		EntrySolver solver(options.GetKBound(), traceInfos);
+		EntrySolver solver(options.GetKBound(), traceInfos, initialAges);
 		std::vector<decimal> calculatedDelays = solver.CalculateDelays(lastInvariants);
 		delays.swap(calculatedDelays);
 	}
