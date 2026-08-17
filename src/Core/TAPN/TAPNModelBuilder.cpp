@@ -39,32 +39,31 @@ namespace VerifyTAPN {
                                         bool customDistributionRandomStart, double weight,
                                         int firingMode)
     {
-        if(player != 0)
-        {
-            std::cerr << "ERROR: Players/games not supported" << std::endl;
+        if (player != 0) {
+            std::cerr << "ERROR: Players/games not supported\n";
             std::exit(1);
         }
-        if(urgent)
-        {
-            std::cerr << "ERROR: Urgent transitions not supported" << std::endl;
+
+        if (urgent) {
+            std::cerr << "ERROR: Urgent transitions not supported\n";
             std::exit(1);
         }
-        if (distrib != 0 || !distribParam.empty()) {
-            std::cerr << "ERROR: Stochastic distributions not supported" << std::endl;
+
+        if (distrib != 0) {
+            std::cerr << "ERROR: Stochastic distributions not supported\n";
             std::exit(1);
         }
+
         if (customDistributionRandomStart) {
-            std::cerr << "ERROR: Custom distribution random start not supported" << std::endl;
+            std::cerr << "ERROR: Custom distribution random start not supported\n";
             std::exit(1);
         }
+
         if (weight != 1.0) {
-            std::cerr << "ERROR: Transition weights not supported" << std::endl;
+            std::cerr << "ERROR: Transition weights not supported\n";
             std::exit(1);
         }
-        if (firingMode != 0) {
-            std::cerr << "ERROR: Firing modes not supported" << std::endl;
-            std::exit(1);
-        }
+
         auto id = _transitions.size();
         _transitions.emplace_back(new TimedTransition(id, name, name, x, y));
     }
