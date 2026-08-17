@@ -12,7 +12,8 @@ namespace VerifyTAPN
 	class EntrySolver
 	{
 	public:
-		EntrySolver(unsigned int tokens, const std::deque<TraceInfo>& traceInfos) : lraTable(0), entryTimeDBM(traceInfos.size()+1), clocks(tokens+1), traceInfos(traceInfos), EPSILON(0.1) { };
+		EntrySolver(unsigned int tokens, const std::deque<TraceInfo>& traceInfos, const std::vector<int>& initialAges)
+			: lraTable(0), entryTimeDBM(traceInfos.size()+1), clocks(tokens+1), traceInfos(traceInfos), initialAges(initialAges), EPSILON(0.1) { };
 		virtual ~EntrySolver() { delete[] lraTable; };
 
 		std::vector<decimal> CalculateDelays(const std::vector<TraceInfo::Invariant>& lastInvariant);
@@ -27,6 +28,7 @@ namespace VerifyTAPN
 
 		constraint_t AfterAction(unsigned int locationIndex, const constraint_t& constraint) const;
 		constraint_t AfterDelay(unsigned int locationIndex, const constraint_t& constraint) const;
+		constraint_t AtEntryTime(unsigned int entryTimeIndex, unsigned int locationIndex, const constraint_t& constraint) const;
 
 		decimal FindValueInRange(bool lowerStrict, decimal lower, decimal upper, bool upperStrict, decimal lastEntryTime) const;
 		void ConvertEntryTimesToDelays(const std::vector<decimal>& entry_times, std::vector<decimal>& delays) const;
@@ -37,6 +39,7 @@ namespace VerifyTAPN
 
 		unsigned int clocks;
 		const std::deque<TraceInfo>& traceInfos;
+		const std::vector<int>& initialAges;
 
 		const decimal EPSILON;
 	};

@@ -2,6 +2,8 @@
 
 #include <string>
 #include <algorithm>
+#include <limits>
+#include <stdexcept>
 #include <vector>
 
 namespace VerifyTAPN {
@@ -10,14 +12,25 @@ namespace VerifyTAPN {
             int tokens,
             bool strict,
             int bound,
+            unfoldtacpn::types::InitialTokenAges &&initialAges,
             double x,
             double y)
     {
+        if (tokens < 0 || initialAges.size() > static_cast<size_t>(tokens)) {
+            throw std::invalid_argument("Initial token ages do not match the initial marking");
+        }
+
+        constexpr auto maxAge = static_cast<uint32_t>(std::numeric_limits<int>::max() >> 1);
+        if (std::any_of(initialAges.begin(), initialAges.end(),
+                [](uint32_t age) { return age >= maxAge; })) {
+            throw std::out_of_range("Initial token age exceeds the supported DBM bound");
+        }
+
         TimeInvariant timeInvariant = TimeInvariant(strict, bound);
         auto id = _places.size();
         _places.emplace_back(new TimedPlace(id, name, name, timeInvariant, x, y));
-        _initialMarking.emplace_back(tokens);
-
+        _initialMarking.emplace_back(initialAges.begin(), initialAges.end());
+        _initialMarking.back().resize(tokens, 0);
     }
 
     void TAPNModelBuilder::addTransition(const std::string &name, int player, bool urgent,
@@ -26,32 +39,31 @@ namespace VerifyTAPN {
                                         bool customDistributionRandomStart, double weight,
                                         int firingMode)
     {
-        if(player != 0)
-        {
-            std::cerr << "ERROR: Players/games not supported" << std::endl;
+        if (player != 0) {
+            std::cerr << "ERROR: Players/games not supported\n";
             std::exit(1);
         }
-        if(urgent)
-        {
-            std::cerr << "ERROR: Urgent transitions not supported" << std::endl;
+
+        if (urgent) {
+            std::cerr << "ERROR: Urgent transitions not supported\n";
             std::exit(1);
         }
-        if (distrib != 0 || !distribParam.empty()) {
-            std::cerr << "ERROR: Stochastic distributions not supported" << std::endl;
+
+        if (distrib != 0) {
+            std::cerr << "ERROR: Stochastic distributions not supported\n";
             std::exit(1);
         }
+
         if (customDistributionRandomStart) {
-            std::cerr << "ERROR: Custom distribution random start not supported" << std::endl;
+            std::cerr << "ERROR: Custom distribution random start not supported\n";
             std::exit(1);
         }
+
         if (weight != 1.0) {
-            std::cerr << "ERROR: Transition weights not supported" << std::endl;
+            std::cerr << "ERROR: Transition weights not supported\n";
             std::exit(1);
         }
-        if (firingMode != 0) {
-            std::cerr << "ERROR: Firing modes not supported" << std::endl;
-            std::exit(1);
-        }
+
         auto id = _transitions.size();
         _transitions.emplace_back(new TimedTransition(id, name, name, x, y));
     }
